@@ -1,0 +1,61 @@
+# Etapa 1: Build con Flutter SDK y usuario no root
+FROM debian:bullseye-slim AS build
+
+ENV FLUTTER_VERSION=3.32.0
+ENV FLUTTER_HOME=/opt/flutter
+ENV FLUTTER_ROOT=$FLUTTER_HOME
+ENV PATH="$FLUTTER_HOME/bin:$FLUTTER_HOME/bin/cache/dart-sdk/bin:$PATH"
+ENV PUB_CACHE=/app/.pub-cache
+ENV FLUTTER_WEB_SERVER_ANALYTICS=false
+
+RUN apt-get update && apt-get install -y \
+    curl git unzip xz-utils zip libglu1-mesa ca-certificates sudo \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch $FLUTTER_VERSION https://github.com/flutter/flutter.git $FLUTTER_HOME
+
+RUN flutter precache --web
+RUN flutter doctor -v
+
+RUN useradd -m flutteruser && \
+    mkdir -p /app && \
+    mkdir -p /app/.pub-cache && \
+    chown -R flutteruser:flutteruser /app && \
+    chown -R flutteruser:flutteruser $FLUTTER_HOME
+
+USER flutteruser
+WORKDIR /app
+
+# Cachear dependencias
+COPY --chown=flutteruser:flutteruser pubspec.* ./
+RUN flutter pub get
+
+# Copiar el resto del código
+COPY --chown=flutteruser:flutteruser . .
+
+# Limpiar y reconstruir dependencias
+RUN flutter clean && flutter pub get
+
+# Build para web
+RUN flutter build web --no-tree-shake-icons --verbose
+
+# Verificar que AssetManifest.json existe
+RUN test -f build/web/assets/AssetManifest.json || (echo "❌ AssetManifest.json no generado" && exit 1)
+
+# Copiar assets extra manualmente si hace falta
+RUN cp -r web/assets/* build/web/assets/
+
+# Etapa 2: Imagen final Nginx
+FROM nginx:alpine
+
+RUN apk add --no-cache gettext
+
+COPY --from=build /app/build/web /usr/share/nginx/html
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 80
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
