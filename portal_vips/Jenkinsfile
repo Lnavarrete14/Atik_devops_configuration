@@ -17,7 +17,7 @@ pipeline {
         stage('Usar Dockerfile de Repo B') {
           steps {
             // Copiamos el Dockerfile desde Repo B al root del workspace
-            sh 'cp main/portal_vips/dockerfile Dockerfile'
+            sh 'cp portal_vips/dockerfile Dockerfile'
           }
         }
 
