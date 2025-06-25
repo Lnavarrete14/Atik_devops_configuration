@@ -8,10 +8,17 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
+        stage('Checkout código del proyecto') {
+          steps {
+            checkout scm // trae el código de Repo A (el que ejecuta el pipeline)
+          }
+        }
+    
+        stage('Usar Dockerfile de Repo B') {
+          steps {
+            // Copiamos el Dockerfile desde Repo B al root del workspace
+            sh 'cp main/portal_vips/dockerfile Dockerfile'
+          }
         }
 
         stage('Build Docker Image') {
