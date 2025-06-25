@@ -8,16 +8,18 @@ pipeline {
     }
 
     stages {
-        stage('Checkout código del proyecto') {
+        stage('Clonar Dockerfile desde Repo B') {
           steps {
-            checkout scm // trae el código de Repo A (el que ejecuta el pipeline)
+            // Clonamos el propio repo que contiene el Dockerfile
+            sh 'git clone --depth=1 --branch main https://github.com/Lnavarrete14/Atik_devops_configuration.git temp_config_repo'
+            sh 'cp temp_config_repo/portal_vips/dockerfile Dockerfile'
+            sh 'rm -rf temp_config_repo'
           }
         }
     
-        stage('Usar Dockerfile de Repo B') {
+        stage('Checkout código del proyecto (Repo A)') {
           steps {
-            // Copiamos el Dockerfile desde Repo B al root del workspace
-            sh 'cp portal_vips/dockerfile Dockerfile'
+            checkout scm
           }
         }
 
