@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'flutter-web-app'
         DOCKER_CONTAINER = 'flutter-web-container'
-        PORT = '8080'
+        PORT = '8081'
     }
 
     stages {
